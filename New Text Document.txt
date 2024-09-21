@@ -1,0 +1,93 @@
+from telethon import TelegramClient, events, errors
+import requests
+import json
+import re
+import logging
+import asyncio
+import time
+
+# Configuration
+api_id = 27201539
+api_hash = '4655643c2d0cd4891daacb697ef81108'
+
+# Initialize clients
+client = TelegramClient("ssshl", api_id, api_hash)
+client2 = TelegramClient("bothg", api_id, api_hash)
+
+def lista(dets):
+    dets = str(dets)
+    return re.findall(r'[0-9]+', dets)
+
+def RoldexVerseCcs(id):
+    with open('UltraVerseCcs.txt', 'w') as f:
+        f.write(str(id))
+    return True
+
+async def main():
+    await client.start()
+    await client2.start()
+
+    print("Started")
+    while True:
+        try:
+            req = requests.Session()
+            with open('UltraVerseCcs.txt', 'r') as f:
+                rd = int(f.read().strip())
+
+            channelList = [
+                "https://t.me/BinnersHub",
+                "https://t.me/GGDOCS",
+                "https://t.me/CCs_DroPs",
+                "https://t.me/scrapelives",
+                "https://t.me/nastylivescr",
+                "https://t.me/VegetaScrap",
+                "https://t.me/authcard",
+                "https://t.me/JLScrapper",
+                "https://t.me/xenscrape",
+                "https://t.me/PLUTOCC"
+            ]
+
+            for channel in channelList:
+                async for message in client.iter_messages(channel, min_id=rd, wait_time=5):
+                    msg = message.text
+                    if not msg:
+                        raise Exception('Empty data')
+
+                    input_data = re.findall(r"[0-9]+", msg)
+                    if len(input_data) < 4:
+                        raise Exception("Invalid Data")
+
+                    try:
+                        # Extract relevant fields
+                        cc, mes, ano, cvv = input_data[:4]
+
+                        # Process further based on conditions
+                        if len(mes) > 2:
+                            mes = mes[:2]
+                        if len(ano) > 2:
+                            ano = ano[:2]
+
+                        # Construct response
+                        lista = f"<code>{cc}|{mes}|{ano}|{cvv}</code>"
+                        apibinlist = json.loads(requests.get(f"https://lookup.binlist.net/{cc}").text)
+                        binEmoji = apibinlist["country"]["emoji"]
+                        binBank = apibinlist["bank"]["name"]
+                        respo = f"""
+{lista} - {binBank} - {binEmoji} 
+@MysticNet"""
+
+                        await client2.send_message(-1002232956390, respo, parse_mode='html')
+
+                    except Exception as e:
+                        print(f"Processing error: {e}")
+
+        except errors.FloodWaitError as e:
+            print(f'Have to sleep {e.seconds} seconds')
+            await asyncio.sleep(e.seconds)
+        except Exception as e:
+            print(e)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    with client:
+        client.loop.run_until_complete(main())
